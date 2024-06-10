@@ -42,7 +42,7 @@ pub struct Subject {
     #[cynic(rename = "subject_name")]
     pub subject_name: String,
     #[cynic(rename = "subject_code")]
-    pub subject_codes: String,
+    pub subject_code: String,
 }
 
 #[derive(cynic::QueryFragment, Debug)]
@@ -72,7 +72,7 @@ pub struct Enrollment {
     pub class_code: String,
     pub nim: String,
     #[cynic(rename = "subject_code")]
-    pub subject_codes: String,
+    pub subject_code: String,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -264,19 +264,19 @@ async fn view_transaction(state: State<'_, AppState>) -> Result<Vec<ViewTransact
 struct EnrollmentsBySubject {
     class_code: String,
     nim: String,
-    subject_codes: String,
+    subject_code: String,
 }
 
 #[tauri::command]
-async fn get_enrollments_by_subject_code(state: State<'_, AppState>, subject_codes: String) -> Result<Vec<EnrollmentsBySubject>, String> {
+async fn get_enrollments_by_subject_code(state: State<'_, AppState>, subject_code: String) -> Result<Vec<EnrollmentsBySubject>, String> {
     let mut conn = state.mysql_pool.get_conn().map_err(|e| format!("Failed to get connection: {}", e))?;
 
-    let query = format!("SELECT class_code, nim, subject_code FROM enrollments WHERE subject_code = '{}'", subject_codes);
+    let query = format!("SELECT class_code, nim, subject_code FROM enrollments WHERE subject_code = '{}'", subject_code);
     println!("SQL Query: {}", query); // Add debug print for SQL query
     
     let enrollments = conn.query_map(
         query,
-        |(class_code, nim, subject_codes)| EnrollmentsBySubject { class_code, nim, subject_codes }
+        |(class_code, nim, subject_code)| EnrollmentsBySubject { class_code, nim, subject_code }
     ).map_err(|e| format!("Failed to query enrollments: {}", e))?;
 
     println!("Enrollments by Subject Code: {:?}", enrollments); // Add debug print for fetched enrollments
@@ -447,7 +447,7 @@ async fn insert_subjects(conn: &mut PooledConn) -> Result<(), ()> {
             ON DUPLICATE KEY UPDATE 
             subject_code = VALUES(subject_code)",
             params!{
-                "subject_code" => subject.subject_codes,
+                "subject_code" => subject.subject_code,
                 "subject_name" => subject.subject_name
             },
         ).map_err(|err| {
@@ -477,14 +477,14 @@ async fn insert_transaction_header(conn: &mut PooledConn) -> Result<(), ()> {
         // Add more schedules as needed
     ];
 
-    for (transaction_code, subject_codes, shift_code, room_number, date) in transaction_headers {
+    for (transaction_code, subject_code, shift_code, room_number, date) in transaction_headers {
         conn.exec_drop(
             r"INSERT INTO transaction_header (transaction_code, subject_code, shift_code, room_number, date) 
             VALUES (:transaction_code, :subject_code, :shift_code, :room_number, :date) ON DUPLICATE KEY UPDATE 
             transaction_code = VALUES(transaction_code)",
             params!{
                 "transaction_code" => transaction_code,
-                "subject_code" => subject_codes,
+                "subject_code" => subject_code,
                 "shift_code" => shift_code,
                 "room_number" => room_number,
                 "date" => date,
@@ -506,7 +506,7 @@ async fn insert_enrollment(conn: &mut PooledConn) -> Result<(), ()> {
             ON DUPLICATE KEY UPDATE 
                 class_code = VALUES(class_code)",
             params!{
-                "subject_code" => enrollment.subject_codes,
+                "subject_code" => enrollment.subject_code,
                 "nim" => enrollment.nim,
                 "class_code" => enrollment.class_code
             },
@@ -522,14 +522,14 @@ async fn insert_enrollment(conn: &mut PooledConn) -> Result<(), ()> {
 #[tauri::command]
 async fn allocate_exam(
     state: State<'_, AppState>,
-    subject_codes: String,
+    subject_code: String,
     class_codes: Vec<String>,
     date: String,
     shift_code: String,
     room_number: String,
 ) -> Result<String, String> {
     println!("Received data:");
-    println!("Subject Code: {}", subject_codes);
+    println!("Subject Code: {}", subject_code);
     println!("Class Codes: {:?}", class_codes);
     println!("Date: {}", date);
     println!("Shift Code: {}", shift_code);
@@ -557,7 +557,7 @@ async fn allocate_exam(
 
     // Insert into transaction header
     let query = "INSERT INTO transaction_header (transaction_code, subject_code, shift_code, date, room_number) VALUES (?, ?, ?, ?, ?)";
-    transaction.exec_drop(query, (transaction_code, subject_codes, shift_code, date, room_number)).map_err(|e| format!("Failed to insert into transaction_header: {}", e))?;
+    transaction.exec_drop(query, (transaction_code, subject_code, shift_code, date, room_number)).map_err(|e| format!("Failed to insert into transaction_header: {}", e))?;
     
     transaction.commit().map_err(|e| format!("Failed to commit transaction: {}", e))?;
     
@@ -761,7 +761,7 @@ fn main() {
             user: Mutex::new(None),
             mysql_pool: pool,
         })
-        .invoke_handler(tauri::generate_handler![login, logout, change_password, get_current_user, get_all_users, get_all_subject, get_all_room, get_scheduled_rooms, get_all_shifts, get_all_enrollment, get_enrollments_by_subject_code, view_transaction, update_user_role, allocate_exam])
+        .invoke_handler(tauri::generate_handler![login, logout, change_password, get_current_user, get_all_users, get_all_subject, get_all_room, get_scheduled_rooms, get_all_shifts, get_all_enrollment, get_enrollments_by_subject_code, update_user_role, allocate_exam, view_transaction])
         .run(tauri::generate_context!())
         .expect("Error while running Tauri application");
 }

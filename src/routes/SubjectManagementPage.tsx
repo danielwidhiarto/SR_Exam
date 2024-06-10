@@ -15,7 +15,7 @@ export default function SubjectManagementPage() {
 
   // Filter subjects based on search query
   const filteredSubjects = subjects.filter(subject => 
-    subject.subject_codes.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    subject.subject_code.toLowerCase().includes(searchQuery.toLowerCase()) ||
     subject.subject_name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -44,8 +44,8 @@ export default function SubjectManagementPage() {
           </thead>
           <tbody>
             {filteredSubjects.map((subject: Subject) => (
-              <tr key={subject.subject_codes as React.Key}>
-                <td>{subject.subject_codes}</td>
+              <tr key={subject.subject_code as React.Key}>
+                <td>{subject.subject_code}</td>
                 <td>{subject.subject_name}</td>
               </tr>
             ))}

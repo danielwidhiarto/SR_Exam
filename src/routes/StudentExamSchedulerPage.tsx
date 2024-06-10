@@ -110,7 +110,7 @@ export default function StudentExamSchedulerPage() {
 
   const filteredSubjects = subjects.filter((subject) =>
     subject.subject_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    subject.subject_codes.toLowerCase().includes(searchTerm.toLowerCase())
+    subject.subject_code.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const filteredRooms = rooms.filter((room) =>
@@ -141,11 +141,11 @@ export default function StudentExamSchedulerPage() {
               {filteredSubjects.length > 0 ? (
                 filteredSubjects.map((subject) => (
                   <div
-                    key={subject.subject_codes}
-                    onClick={() => handleSubjectChange(subject.subject_codes, subject.subject_name)}
+                    key={subject.subject_code}
+                    onClick={() => handleSubjectChange(subject.subject_code, subject.subject_name)}
                     className="cursor-pointer p-2 hover:bg-gray-200"
                   >
-                    {subject.subject_codes}-{subject.subject_name}
+                    {subject.subject_code}-{subject.subject_name}
                   </div>
                 ))
               ) : (
