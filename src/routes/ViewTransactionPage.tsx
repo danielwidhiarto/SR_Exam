@@ -27,12 +27,13 @@ export default function ViewTransactionPage() {
 
   return (
     <div className="w-screen h-screen">
-      <NavbarComponent />
-      <div className="container mx-auto">
-        <h3 className="text-left ml-5 mt-3 mb-3">View Transaction Page</h3>
-        <div className="overflow-x-auto">
-          <table className="min-w-full bg-white">
-            <thead>
+    <NavbarComponent />
+    <h3 className="text-left ml-5 mt-3 mb-3">Subject Management Page</h3>
+    <div className="ml-5 mt-3 mb-2 mr-5">
+    <div className="table-responsive p-3">
+
+    <table className="table table-hover table-bordered">
+    <thead className="thead-dark">
               <tr className="bg-gray-200 text-gray-600 text-sm leading-normal">
                 <th className="py-3 px-6 text-left">Transaction Date</th>
                 <th className="py-3 px-6 text-left">Room</th>
@@ -57,6 +58,6 @@ export default function ViewTransactionPage() {
           </table>
         </div>
       </div>
-    </div>
+      </div>
   );
 }
