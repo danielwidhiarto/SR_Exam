@@ -1,4 +1,4 @@
 interface Subject {
-    subject_codes: string,
+    subject_code: string,
     subject_name: string
 }
