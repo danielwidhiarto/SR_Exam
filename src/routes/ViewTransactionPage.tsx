@@ -6,6 +6,7 @@ export default function ViewTransactionPage() {
   const [transactions, setTransactions] = useState<ViewTransaction[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [subjectCodeToNameMap, setSubjectCodeToNameMap] = useState<{ [key: string]: string }>({});
+  const [shiftCodeToTimeMap, setShiftCodeToTimeMap] = useState<{ [key: string]: string }>({});
 
   useEffect(() => {
     invoke("view_transaction").then((result) => {
@@ -17,11 +18,21 @@ export default function ViewTransactionPage() {
       setSubjects(subjectsData);
 
       // Create a mapping from subject code to subject name
-      const mapping: { [key: string]: string } = {};
+      const subjectMapping: { [key: string]: string } = {};
       subjectsData.forEach(subject => {
-        mapping[subject.subject_code] = subject.subject_name;
+        subjectMapping[subject.subject_code] = subject.subject_name;
       });
-      setSubjectCodeToNameMap(mapping);
+      setSubjectCodeToNameMap(subjectMapping);
+    });
+
+    invoke("get_all_shifts").then((result) => {
+      const shiftsData = result as Shift[];
+      // Create a mapping from shift code to shift times (start_time - end_time)
+      const shiftMapping: { [key: string]: string } = {};
+      shiftsData.forEach(shift => {
+        shiftMapping[shift.shift_code] = `${shift.start_time} - ${shift.end_time}`;
+      });
+      setShiftCodeToTimeMap(shiftMapping);
     });
   }, []);
 
@@ -50,7 +61,7 @@ export default function ViewTransactionPage() {
                   <td className="py-3 px-6 text-left">{transaction.room_number}</td>
                   <td className="py-3 px-6 text-left">{transaction.subject_codes}</td>
                   <td className="py-3 px-6 text-left">{subjectCodeToNameMap[transaction.subject_codes]}</td>
-                  <td className="py-3 px-6 text-left">{transaction.shift_code}</td>
+                  <td className="py-3 px-6 text-left">{shiftCodeToTimeMap[transaction.shift_code]}</td>
                   <td className="py-3 px-6 text-left">{transaction.proctor !== null ? transaction.proctor : 'N/A'}</td>
                 </tr>
               ))}
@@ -58,6 +69,6 @@ export default function ViewTransactionPage() {
           </table>
         </div>
       </div>
-      </div>
+    </div>
   );
 }
