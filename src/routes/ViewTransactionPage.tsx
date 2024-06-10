@@ -5,6 +5,7 @@ import { invoke } from "@tauri-apps/api";
 export default function ViewTransactionPage() {
   const [transactions, setTransactions] = useState<ViewTransaction[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [subjectCodeToNameMap, setSubjectCodeToNameMap] = useState<{ [key: string]: string }>({});
 
   useEffect(() => {
     invoke("view_transaction").then((result) => {
@@ -12,9 +13,16 @@ export default function ViewTransactionPage() {
     });
 
     invoke("get_all_subject").then((result) => {
-      setSubjects(result as Subject[]);
-    });
+      const subjectsData = result as Subject[];
+      setSubjects(subjectsData);
 
+      // Create a mapping from subject code to subject name
+      const mapping: { [key: string]: string } = {};
+      subjectsData.forEach(subject => {
+        mapping[subject.subject_code] = subject.subject_name;
+      });
+      setSubjectCodeToNameMap(mapping);
+    });
   }, []);
 
   return (
@@ -29,7 +37,7 @@ export default function ViewTransactionPage() {
                 <th className="py-3 px-6 text-left">Transaction Date</th>
                 <th className="py-3 px-6 text-left">Room</th>
                 <th className="py-3 px-6 text-left">Subject Code</th>
-                {/* <th className="py-3 px-6 text-left">Subject Name</th> */}
+                <th className="py-3 px-6 text-left">Subject Name</th>
                 <th className="py-3 px-6 text-left">Time</th>
                 <th className="py-3 px-6 text-left">Proctoring Assistant</th>
               </tr>
@@ -40,7 +48,7 @@ export default function ViewTransactionPage() {
                   <td className="py-3 px-6 text-left">{transaction.date}</td>
                   <td className="py-3 px-6 text-left">{transaction.room_number}</td>
                   <td className="py-3 px-6 text-left">{transaction.subject_codes}</td>
-                  <td className="py-3 px-6 text-left">{transaction.subject_codes -> subjects.name}</td>
+                  <td className="py-3 px-6 text-left">{subjectCodeToNameMap[transaction.subject_codes]}</td>
                   <td className="py-3 px-6 text-left">{transaction.shift_code}</td>
                   <td className="py-3 px-6 text-left">{transaction.proctor !== null ? transaction.proctor : 'N/A'}</td>
                 </tr>
