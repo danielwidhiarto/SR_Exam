@@ -303,6 +303,54 @@ async fn update_transaction_proctor(
     }
 }
 
+#[tauri::command]
+async fn allocate_exam(
+    state: State<'_, AppState>,
+    subject_code: String,
+    class_codes: Vec<String>,
+    date: String,
+    shift_code: String,
+    room_number: String,
+) -> Result<String, String> {
+    println!("Received data:");
+    println!("Subject Code: {}", subject_code);
+    println!("Class Codes: {:?}", class_codes);
+    println!("Date: {}", date);
+    println!("Shift Code: {}", shift_code);
+    println!("Room Number: {}", room_number);
+
+    let mut conn = state.mysql_pool.get_conn().map_err(|e| format!("Failed to get connection: {}", e))?;
+    
+    let mut transaction = conn.start_transaction(TxOpts::default()).map_err(|e| format!("Failed to start transaction: {}", e))?;
+
+    // Check if there is already a transaction with the same shift_code and date
+    let existing_transactions: Vec<(String, String)> = transaction.exec(
+        "SELECT room_number, shift_code FROM transaction_header WHERE date = ? AND shift_code = ?",
+        (date.clone(), shift_code.clone()),
+    ).map_err(|e| format!("Failed to query existing transactions: {}", e))?;
+
+    if !existing_transactions.is_empty() {
+        return Err(format!("A transaction with shift code {} already exists for the date {}", shift_code, date));
+    }
+
+    // Generate a transaction code: "TH" followed by 3 random digits
+    let mut rng = rand::thread_rng();
+    let transaction_code: String = format!("TH{:03}", rng.gen_range(0..1000));
+
+    println!("Generated Transaction Code: {}", transaction_code);
+
+    // Insert into transaction header
+    let query = "INSERT INTO transaction_header (transaction_code, subject_code, shift_code, date, room_number) VALUES (?, ?, ?, ?, ?)";
+    transaction.exec_drop(query, (transaction_code, subject_code, shift_code, date, room_number)).map_err(|e| format!("Failed to insert into transaction_header: {}", e))?;
+    
+    transaction.commit().map_err(|e| format!("Failed to commit transaction: {}", e))?;
+    
+    println!("Transaction committed successfully.");
+    
+    Ok("Exam allocated successfully".to_string())
+}
+
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 struct EnrollmentsBySubject {
     class_code: String,
@@ -562,52 +610,6 @@ async fn insert_enrollment(conn: &mut PooledConn) -> Result<(), ()> {
     Ok(())
 }
 
-#[tauri::command]
-async fn allocate_exam(
-    state: State<'_, AppState>,
-    subject_code: String,
-    class_codes: Vec<String>,
-    date: String,
-    shift_code: String,
-    room_number: String,
-) -> Result<String, String> {
-    println!("Received data:");
-    println!("Subject Code: {}", subject_code);
-    println!("Class Codes: {:?}", class_codes);
-    println!("Date: {}", date);
-    println!("Shift Code: {}", shift_code);
-    println!("Room Number: {}", room_number);
-
-    let mut conn = state.mysql_pool.get_conn().map_err(|e| format!("Failed to get connection: {}", e))?;
-    
-    let mut transaction = conn.start_transaction(TxOpts::default()).map_err(|e| format!("Failed to start transaction: {}", e))?;
-
-    // Check if there is already a transaction with the same shift_code and date
-    let existing_transactions: Vec<(String, String)> = transaction.exec(
-        "SELECT room_number, shift_code FROM transaction_header WHERE date = ? AND shift_code = ?",
-        (date.clone(), shift_code.clone()),
-    ).map_err(|e| format!("Failed to query existing transactions: {}", e))?;
-
-    if !existing_transactions.is_empty() {
-        return Err(format!("A transaction with shift code {} already exists for the date {}", shift_code, date));
-    }
-
-    // Generate a transaction code: "TH" followed by 3 random digits
-    let mut rng = rand::thread_rng();
-    let transaction_code: String = format!("TH{:03}", rng.gen_range(0..1000));
-
-    println!("Generated Transaction Code: {}", transaction_code);
-
-    // Insert into transaction header
-    let query = "INSERT INTO transaction_header (transaction_code, subject_code, shift_code, date, room_number) VALUES (?, ?, ?, ?, ?)";
-    transaction.exec_drop(query, (transaction_code, subject_code, shift_code, date, room_number)).map_err(|e| format!("Failed to insert into transaction_header: {}", e))?;
-    
-    transaction.commit().map_err(|e| format!("Failed to commit transaction: {}", e))?;
-    
-    println!("Transaction committed successfully.");
-    
-    Ok("Exam allocated successfully".to_string())
-}
 
 #[tauri::command]
 fn login(username: String, password: String, state: State<'_, AppState>) -> Result<Option<String>, String> {
