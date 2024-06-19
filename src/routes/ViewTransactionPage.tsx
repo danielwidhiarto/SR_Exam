@@ -39,7 +39,7 @@ export default function ViewTransactionPage() {
   return (
     <div className="w-screen h-screen">
     <NavbarComponent />
-    <h3 className="text-left ml-5 mt-3 mb-3">Subject Management Page</h3>
+    <h3 className="text-left ml-5 mt-3 mb-3">View Transaction Page</h3>
     <div className="ml-5 mt-3 mb-2 mr-5">
     <div className="table-responsive p-3">
 
