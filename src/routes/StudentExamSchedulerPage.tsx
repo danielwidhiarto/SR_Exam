@@ -13,12 +13,12 @@ export default function StudentExamSchedulerPage() {
   const [examDate, setExamDate] = useState<string>("");
   const [examRoom, setExamRoom] = useState<string>("");
   const [shifts, setShifts] = useState<Shift[]>([]);
-
   const [rooms, setRooms] = useState<Room[]>([]);
   const [roomSearchTerm, setRoomSearchTerm] = useState<string>("");
   const [isRoomDropdownOpen, setIsRoomDropdownOpen] = useState<boolean>(false);
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
   const [alertVariant, setAlertVariant] = useState<string>("success");
+  const [selectedShift, setSelectedShift] = useState<string>("");
 
   useEffect(() => {
     invoke("get_all_subject").then((result) => {
@@ -44,8 +44,6 @@ export default function StudentExamSchedulerPage() {
     }
   }, [selectedSubject]);
 
-  const [selectedShift, setSelectedShift] = useState<string>("");
-
   const handleSubjectChange = (subjectCode: string, subjectName: string) => {
     setSelectedSubject(subjectCode);
     setSearchTerm(`${subjectCode}-${subjectName}`);
@@ -65,7 +63,6 @@ export default function StudentExamSchedulerPage() {
     setSelectedShift("");
   };
 
-  
   const handleClassChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const classCode = e.target.value;
     setSelectedClasses((prev) =>
@@ -85,7 +82,32 @@ export default function StudentExamSchedulerPage() {
     setSelectedShift(shiftCode);
   };
 
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedDate = new Date(e.target.value);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Clear time part to compare only dates
+
+    if (selectedDate <= today) {
+      setAlertMessage("The exam date must be in the future.");
+      setAlertVariant("danger");
+    } else {
+      setAlertMessage(null);
+    }
+
+    setExamDate(e.target.value);
+  };
+
   const handleSubmit = () => {
+    const selectedDate = new Date(examDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Clear time part to compare only dates
+
+    if (selectedDate <= today) {
+      setAlertMessage("The exam date must be in the future.");
+      setAlertVariant("danger");
+      return;
+    }
+
     const examData = {
       subjectCode: selectedSubject,
       classCodes: selectedClasses,
@@ -93,7 +115,7 @@ export default function StudentExamSchedulerPage() {
       shiftCode: selectedShift,
       roomNumber: examRoom,
     };
-  
+
     invoke("allocate_exam", examData)
       .then((response) => {
         console.log("Exam allocated successfully", response);
@@ -106,7 +128,7 @@ export default function StudentExamSchedulerPage() {
         setAlertMessage("Failed to allocate exam.");
         setAlertVariant("danger");
       });
-  };  
+  };
 
   const filteredSubjects = subjects.filter((subject) =>
     subject.subject_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -182,7 +204,7 @@ export default function StudentExamSchedulerPage() {
               id="exam-date"
               type="date"
               value={examDate}
-              onChange={(e) => setExamDate(e.target.value)}
+              onChange={handleDateChange}
               className="p-2 border border-gray-300 rounded w-full mb-4"
             />
 
@@ -244,10 +266,10 @@ export default function StudentExamSchedulerPage() {
         )}
       </div>
       {alertMessage && (
-          <Alert variant={alertVariant} onClose={() => setAlertMessage(null)} dismissible>
-            {alertMessage}
-          </Alert>
-        )}
+        <Alert variant={alertVariant} onClose={() => setAlertMessage(null)} dismissible>
+          {alertMessage}
+        </Alert>
+      )}
     </div>
   );
 }
