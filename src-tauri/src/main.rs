@@ -303,6 +303,12 @@ async fn update_transaction_proctor(
     }
 }
 
+#[derive(Serialize)]
+struct AllocateExamResponse {
+    transaction_code: String,
+    message: String,
+}
+
 #[tauri::command]
 async fn allocate_exam(
     state: State<'_, AppState>,
@@ -311,7 +317,7 @@ async fn allocate_exam(
     date: String,
     shift_code: String,
     room_number: String,
-) -> Result<String, String> {
+) -> Result<AllocateExamResponse, String> {
     println!("Received data:");
     println!("Subject Code: {}", subject_code);
     println!("Class Codes: {:?}", class_codes);
@@ -341,13 +347,16 @@ async fn allocate_exam(
 
     // Insert into transaction header
     let query = "INSERT INTO transaction_header (transaction_code, subject_code, shift_code, date, room_number) VALUES (?, ?, ?, ?, ?)";
-    transaction.exec_drop(query, (transaction_code, subject_code, shift_code, date, room_number)).map_err(|e| format!("Failed to insert into transaction_header: {}", e))?;
+    transaction.exec_drop(query, (transaction_code.clone(), subject_code.clone(), shift_code.clone(), date.clone(), room_number.clone())).map_err(|e| format!("Failed to insert into transaction_header: {}", e))?;
     
     transaction.commit().map_err(|e| format!("Failed to commit transaction: {}", e))?;
     
     println!("Transaction committed successfully.");
     
-    Ok("Exam allocated successfully".to_string())
+    Ok(AllocateExamResponse {
+        transaction_code,
+        message: "Exam allocated successfully".to_string(),
+    })
 }
 
 

@@ -19,6 +19,7 @@ export default function StudentExamSchedulerPage() {
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
   const [alertVariant, setAlertVariant] = useState<string>("success");
   const [selectedShift, setSelectedShift] = useState<string>("");
+  const [submissionDetails, setSubmissionDetails] = useState<string | null>(null);
 
   useEffect(() => {
     invoke("get_all_subject").then((result) => {
@@ -101,13 +102,13 @@ export default function StudentExamSchedulerPage() {
     const selectedDate = new Date(examDate);
     const today = new Date();
     today.setHours(0, 0, 0, 0); // Clear time part to compare only dates
-
+  
     if (selectedDate <= today) {
       setAlertMessage("The exam date must be in the future.");
       setAlertVariant("danger");
       return;
     }
-
+  
     const examData = {
       subjectCode: selectedSubject,
       classCodes: selectedClasses,
@@ -115,11 +116,23 @@ export default function StudentExamSchedulerPage() {
       shiftCode: selectedShift,
       roomNumber: examRoom,
     };
-
+  
     invoke("allocate_exam", examData)
       .then((response) => {
-        console.log("Exam allocated successfully", response);
-        setAlertMessage("Exam allocated successfully!");
+        const res = response as any;
+        console.log("Exam allocated successfully", res);
+        setAlertMessage(null);
+        setSubmissionDetails(`
+          Received data:
+          Transaction Code: ${res.transaction_code}
+          Subject Code: ${examData.subjectCode}
+          Class Codes: ${JSON.stringify(examData.classCodes)}
+          Date: ${examData.date}
+          Shift Code: ${examData.shiftCode}
+          Room Number: ${examData.roomNumber}
+          
+          Transaction committed successfully.
+        `);
         setAlertVariant("success");
         resetForm(); // Reset the form here
       })
@@ -129,6 +142,7 @@ export default function StudentExamSchedulerPage() {
         setAlertVariant("danger");
       });
   };
+  
 
   const filteredSubjects = subjects.filter((subject) =>
     subject.subject_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -176,7 +190,7 @@ export default function StudentExamSchedulerPage() {
             </div>
           )}
         </div>
-
+  
         {selectedSubject && (
           <div>
             <h4 className="mb-2">Select Classes:</h4>
@@ -196,7 +210,7 @@ export default function StudentExamSchedulerPage() {
             ))}
           </div>
         )}
-
+  
         {selectedClasses.length > 0 && (
           <div className="mt-4">
             <label htmlFor="exam-date" className="block mb-2">Select Exam Date:</label>
@@ -207,7 +221,7 @@ export default function StudentExamSchedulerPage() {
               onChange={handleDateChange}
               className="p-2 border border-gray-300 rounded w-full mb-4"
             />
-
+  
             <label htmlFor="exam-shift" className="block mb-2">Select Exam Time:</label>
             <select
               id="exam-shift"
@@ -222,7 +236,7 @@ export default function StudentExamSchedulerPage() {
                 </option>
               ))}
             </select>
-
+  
             <label htmlFor="room-search" className="block mb-2">Search and Select Exam Room:</label>
             <div className="relative mb-4">
               <input
@@ -255,7 +269,7 @@ export default function StudentExamSchedulerPage() {
                 </div>
               )}
             </div>
-
+  
             <button
               onClick={handleSubmit}
               className="bg-blue-500 text-white p-2 rounded mt-4"
@@ -264,12 +278,19 @@ export default function StudentExamSchedulerPage() {
             </button>
           </div>
         )}
+  
+        {alertMessage && (
+          <Alert variant={alertVariant} onClose={() => setAlertMessage(null)} dismissible>
+            {alertMessage}
+          </Alert>
+        )}
+        
+        {submissionDetails && (
+          <Alert variant={alertVariant} onClose={() => setSubmissionDetails(null)} dismissible>
+            <pre>{submissionDetails}</pre>
+          </Alert>
+        )}
       </div>
-      {alertMessage && (
-        <Alert variant={alertVariant} onClose={() => setAlertMessage(null)} dismissible>
-          {alertMessage}
-        </Alert>
-      )}
     </div>
   );
-}
+}  
