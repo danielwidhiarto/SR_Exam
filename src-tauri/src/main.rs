@@ -303,6 +303,50 @@ async fn update_transaction_proctor(
     }
 }
 
+#[tauri::command]
+async fn update_transaction_proctor2(
+    state: State<'_, AppState>,
+    transaction_code: String,
+    selected_assistant: String
+) -> Result<String, String> {
+    // Log the input parameters
+    println!("Received request to update transaction proctor.");
+    println!("Transaction code: {}", transaction_code);
+    println!("Selected assistant: {}", selected_assistant);
+
+    // Get a connection from the MySQL pool
+    let mut conn = match state.mysql_pool.get_conn() {
+        Ok(conn) => {
+            println!("Successfully obtained connection from pool.");
+            conn
+        },
+        Err(e) => {
+            println!("Failed to get connection: {}", e);
+            return Err(format!("Failed to get connection: {}", e));
+        }
+    };
+
+    // Prepare the SQL query to update the proctor
+    let query = "UPDATE transaction_header SET proctor = :selected_assistant WHERE transaction_code = :transaction_code";
+    println!("SQL query prepared: {}", query);
+
+    // Execute the SQL query
+    match conn.exec_drop(query, params! {
+        "selected_assistant" => selected_assistant.clone(),
+        "transaction_code" => transaction_code.clone()
+    }) {
+        Ok(_) => {
+            println!("Successfully updated proctor for transaction_code: {}", transaction_code);
+            Ok("Proctor updated successfully".to_string())
+        },
+        Err(e) => {
+            println!("Failed to update transaction: {}", e);
+            Err(format!("Failed to update transaction: {}", e))
+        }
+    }
+}
+
+
 #[derive(Serialize)]
 struct AllocateExamResponse {
     transaction_code: String,
@@ -815,7 +859,7 @@ fn main() {
             user: Mutex::new(None),
             mysql_pool: pool,
         })
-        .invoke_handler(tauri::generate_handler![login, logout, change_password, get_current_user, get_all_users, get_all_subject, get_all_room, get_scheduled_rooms, get_all_shifts, get_all_enrollment, get_enrollments_by_subject_code, update_user_role, allocate_exam, view_transaction, update_transaction_proctor])
+        .invoke_handler(tauri::generate_handler![login, logout, change_password, get_current_user, get_all_users, get_all_subject, get_all_room, get_scheduled_rooms, get_all_shifts, get_all_enrollment, get_enrollments_by_subject_code, update_user_role, allocate_exam, view_transaction, update_transaction_proctor,update_exam_transaction])
         .run(tauri::generate_context!())
         .expect("Error while running Tauri application");
 }
